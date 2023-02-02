@@ -127,7 +127,12 @@ const NftCreate: NextPage = () => {
 
   const createNft = async () => {
     try {
-      const nftRes = await axios.get(nftURI);
+      const nftRes = await axios.get(nftURI,{
+        headers: {
+          'Accept': 'text/plain'
+        }
+      });
+
       const content = nftRes.data;
 
       Object.keys(content).forEach(key => {
