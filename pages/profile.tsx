@@ -8,7 +8,7 @@ import { useOwnedNfts } from '@hooks/web3';
 import { useEffect, useState } from 'react';
 
 const tabs = [
-  { name: 'Your Collection', href: '#', current: true },
+  { name: '您的基因数据', href: '#', current: true },
 ]
 
 function classNames(...classes: string[]) {
@@ -35,7 +35,7 @@ const Profile: NextPage = () => {
             <main className="flex-1 overflow-y-auto">
               <div className="pt-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex">
-                  <h1 className="flex-1 text-2xl font-bold text-gray-900">Your NFTs</h1>
+                  <h1 className="flex-1 text-2xl font-bold text-gray-900">您的基因数据</h1>
                 </div>
                 <div className="mt-3 sm:mt-2">
                   <div className="hidden sm:block">
@@ -136,7 +136,7 @@ const Profile: NextPage = () => {
                     type="button"
                     className="flex-1 bg-indigo-600 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                   >
-                    Download Image
+                    下载基因数据
                   </button>
                   <button
                     disabled={activeNft.isListed}
@@ -149,7 +149,7 @@ const Profile: NextPage = () => {
                     type="button"
                     className="disabled:text-gray-400 disabled:cursor-not-allowed flex-1 ml-3 bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                   >
-                    {activeNft.isListed ? "Nft is listed": "List Nft"}
+                    {activeNft.isListed ? "基因数据已开放": "开放基因数据"}
                   </button>
                 </div>
               </div>

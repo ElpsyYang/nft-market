@@ -7,8 +7,8 @@ import ActiveLink from '../link';
 import Walletbar from './Walletbar';
 
 const navigation = [
-  { name: 'Marketplace', href: '/', current: true },
-  { name: 'Create', href: '/nft/create', current: false }
+  { name: '数据共享库', href: '/', current: true },
+  { name: '提交新数据', href: '/nft/create', current: false }
 ]
 
 function classNames(...classes: string[]) {

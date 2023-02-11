@@ -37,7 +37,7 @@ const url = process.env.NODE_ENV === "production" ?
 
 export const addressCheckMiddleware = async (req: NextApiRequest & { session: Session}, res: NextApiResponse) => {
   return new Promise(async (resolve, reject) => {
-    const message = req.session.get("message-session");
+    const message = req.session.get("message-session"); //{contractAddress: '0x0bEfC2420A6095173540D9E691024b3bbfDAC761',id: 'f12dc6d0-7428-4ad8-8b89-38b92e243047'}
     const provider = new ethers.providers.JsonRpcProvider(url);
     const contract = new ethers.Contract(
       contractAddress,
@@ -45,7 +45,7 @@ export const addressCheckMiddleware = async (req: NextApiRequest & { session: Se
       provider
     ) as unknown as NftMarketContract;
 
-    //这里可以随意使用contract contract.name()
+    //use any function of contract here if needed. ep: contract.name()
 
     let nonce: string | Buffer = 
       "\x19Ethereum Signed Message:\n" +

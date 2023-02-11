@@ -20,6 +20,8 @@ contract NftMarket is ERC721URIStorage, Ownable {
   Counters.Counter private _listedItems;
   Counters.Counter private _tokenIds;
 
+  mapping(bytes32 => uint) private _HashToIds;
+  
   mapping(string => bool) private _usedTokenURIs;
   mapping(uint => NftItem) private _idToNftItem;
 
@@ -36,7 +38,7 @@ contract NftMarket is ERC721URIStorage, Ownable {
     bool isListed
   );
 
-  constructor() ERC721("CreaturesNFT", "CNFT") {}
+  constructor() ERC721("GenomesNFT", "GNFT") {}
 
   function setListingPrice(uint newPrice) external onlyOwner {
     require(newPrice > 0, "Price must be at least 1 wei");

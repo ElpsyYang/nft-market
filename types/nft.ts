@@ -36,3 +36,5 @@ export type PinataRes = {
   Timestamp: string;
   isDuplicate: boolean;
 }
+
+export type Idx = number

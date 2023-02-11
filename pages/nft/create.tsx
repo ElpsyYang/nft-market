@@ -169,12 +169,12 @@ const NftCreate: NextPage = () => {
               <ExclamationIcon className="h-5 w-5 text-yellow-400" aria-hidden="true" />
             </div>
             <div className="ml-3">
-              <h3 className="text-sm font-medium text-yellow-800">Attention needed</h3>
+              <h3 className="text-sm font-medium text-yellow-800">友情提示</h3>
               <div className="mt-2 text-sm text-yellow-700">
                 <p>
                 { network.isLoading ?
                   "Loading..." :
-                  `Connect to ${network.targetNetwork}`
+                  `请连接到 ${network.targetNetwork}`
                 }
                 </p>
               </div>
@@ -191,7 +191,7 @@ const NftCreate: NextPage = () => {
         <div className="py-4">
           { !nftURI &&
             <div className="flex">
-              <div className="mr-2 font-bold underline">Do you have meta data already?</div>
+              <div className="mr-2 font-bold underline">您是否已经上传数据元信息?</div>
               <Switch
                 checked={hasURI}
                 onChange={() => setHasURI(!hasURI)}
@@ -212,9 +212,9 @@ const NftCreate: NextPage = () => {
           <div className="md:grid md:grid-cols-3 md:gap-6">
             <div className="md:col-span-1">
               <div className="px-4 sm:px-0">
-                <h3 className="text-lg font-medium leading-6 text-gray-900">List NFT</h3>
+                <h3 className="text-lg font-medium leading-6 text-gray-900">发布基因数据</h3>
                 <p className="mt-1 text-sm text-gray-600">
-                  This information will be displayed publicly so be careful what you share.
+                  基因数据将会被公布在发布后将会公布在数据库中。
                 </p>
               </div>
             </div>
@@ -225,7 +225,7 @@ const NftCreate: NextPage = () => {
                     <div className="px-4 py-5 bg-white space-y-6 sm:p-6">
                       <div>
                         <label htmlFor="uri" className="block text-sm font-medium text-gray-700">
-                          URI Link
+                          基因元数据链接
                         </label>
                         <div className="mt-1 flex rounded-md shadow-sm">
                           <input
@@ -234,7 +234,7 @@ const NftCreate: NextPage = () => {
                             name="uri"
                             id="uri"
                             className="focus:ring-indigo-500 focus:border-indigo-500 flex-1 block w-full rounded-none rounded-r-md sm:text-sm border-gray-300"
-                            placeholder="http://link.com/data.json"
+                            placeholder="http://DATABASE.com/data.json"
                           />
                         </div>
                       </div>
@@ -255,7 +255,7 @@ const NftCreate: NextPage = () => {
                   <div className="px-4 py-5 bg-white space-y-6 sm:p-6">
                     <div>
                       <label htmlFor="price" className="block text-sm font-medium text-gray-700">
-                        Price (ETH)
+                        价格
                       </label>
                       <div className="mt-1 flex rounded-md shadow-sm">
                         <input
@@ -276,7 +276,7 @@ const NftCreate: NextPage = () => {
                       type="button"
                       className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                     >
-                      List
+                      发布
                     </button>
                   </div>
                 </div>
@@ -287,9 +287,9 @@ const NftCreate: NextPage = () => {
         <div className="md:grid md:grid-cols-3 md:gap-6">
           <div className="md:col-span-1">
             <div className="px-4 sm:px-0">
-              <h3 className="text-lg font-medium leading-6 text-gray-900">Create NFT Metadata</h3>
+              <h3 className="text-lg font-medium leading-6 text-gray-900">创建新的基因元数据</h3>
               <p className="mt-1 text-sm text-gray-600">
-                This information will be displayed publicly so be careful what you share.
+                表单信息将会被展示在基因数据库，请按需填写。
               </p>
             </div>
           </div>
@@ -299,7 +299,7 @@ const NftCreate: NextPage = () => {
                 <div className="px-4 py-5 bg-white space-y-6 sm:p-6">
                   <div>
                     <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                      Name
+                      数据元信息名称
                     </label>
                     <div className="mt-1 flex rounded-md shadow-sm">
                       <input
@@ -309,13 +309,13 @@ const NftCreate: NextPage = () => {
                         name="name"
                         id="name"
                         className="focus:ring-indigo-500 focus:border-indigo-500 flex-1 block w-full rounded-none rounded-r-md sm:text-sm border-gray-300"
-                        placeholder="My Nice NFT"
+                        placeholder="请填写元信息名称，方便后续管理和共享"
                       />
                     </div>
                   </div>
                   <div>
                     <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-                      Description
+                      简要描述
                     </label>
                     <div className="mt-1">
                       <textarea
@@ -325,18 +325,18 @@ const NftCreate: NextPage = () => {
                         name="description"
                         rows={3}
                         className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 mt-1 block w-full sm:text-sm border border-gray-300 rounded-md"
-                        placeholder="Some nft description..."
+                        placeholder="请填写元信息简要描述以方便后续管理和共享"
                       />
                     </div>
                     <p className="mt-2 text-sm text-gray-500">
-                      Brief description of NFT
+                      请简要描述元信息
                     </p>
                   </div>
                   {/* Has Image? */}
                   { nftMeta.image ?
                     <img src={nftMeta.image} alt="" className="h-40" /> :
                     <div>
-                    <label className="block text-sm font-medium text-gray-700">Image</label>
+                    <label className="block text-sm font-medium text-gray-700">元信息</label>
                     <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
                       <div className="space-y-1 text-center">
                         <svg
@@ -358,7 +358,7 @@ const NftCreate: NextPage = () => {
                             htmlFor="file-upload"
                             className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500"
                           >
-                            <span>Upload a file</span>
+                            <span>请上传元信息</span>
                             <input
                               onChange={handleImage}
                               id="file-upload"
@@ -367,9 +367,8 @@ const NftCreate: NextPage = () => {
                               className="sr-only"
                             />
                           </label>
-                          <p className="pl-1">or drag and drop</p>
+                          <p className="pl-1">或将元信息文件拖拽至此处</p>
                         </div>
-                        <p className="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
                       </div>
                     </div>
                   </div>
@@ -401,7 +400,7 @@ const NftCreate: NextPage = () => {
                     type="button"
                     className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                   >
-                    List
+                    发布
                   </button>
                 </div>
               </div>
