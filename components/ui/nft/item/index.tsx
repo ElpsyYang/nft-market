@@ -25,7 +25,7 @@ const product = {
 type NftItemProps = {
   item: GeneNft;
   idx: Idx;
-  buyNft: (token: number, value: number) => Promise<void>;
+  buyNft: (token: number, consumerSign: string, consumerPubKey: string, value: number) => Promise<void>;
 }
 
 // function shortifyAddress(address: string) {
