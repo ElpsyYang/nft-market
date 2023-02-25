@@ -8,7 +8,7 @@ import Link from 'next/link'
 import { NftMeta, PinataRes, GeneNftMeta } from '@_types/nft';
 import axios from 'axios';
 import { useWeb3 } from '@providers/web3';
-import { BigNumber, ethers } from 'ethers';
+import { BigNumber, BytesLike, ethers } from 'ethers';
 import { toast } from "react-toastify";
 import { useNetwork } from '@hooks/web3';
 import { ExclamationIcon } from '@heroicons/react/solid';
@@ -184,7 +184,7 @@ const NftCreate: NextPage = () => {
         nftURI,
         ethers.utils.parseEther(price), 
         dataHash,
-        sign,
+        sign as BytesLike,
         proportion,
         encryptedKey,
         {
