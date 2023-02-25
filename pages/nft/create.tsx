@@ -8,7 +8,7 @@ import Link from 'next/link'
 import { NftMeta, PinataRes, GeneNftMeta } from '@_types/nft';
 import axios from 'axios';
 import { useWeb3 } from '@providers/web3';
-import { ethers } from 'ethers';
+import { BigNumber, ethers } from 'ethers';
 import { toast } from "react-toastify";
 import { useNetwork } from '@hooks/web3';
 import { ExclamationIcon } from '@heroicons/react/solid';
@@ -123,7 +123,7 @@ const NftCreate: NextPage = () => {
       const nft = await contract?._getNftItemByHash(dataHash);
       console.log(nft)
 
-      setFirstProportion(  nft?.firstProportion  )
+      setFirstProportion(  (nft?.firstProportion as BigNumber).toNumber )
       setSustainProportion( (nft?.sustainProportion) as boolean )
 
       const promise = axios.post("/api/verify", {
