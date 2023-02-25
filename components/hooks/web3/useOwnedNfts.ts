@@ -1,15 +1,15 @@
 
 import { CryptoHookFactory } from "@_types/hooks";
-import { Nft } from "@_types/nft";
+import { GeneNft } from "@_types/nft";
 import { ethers } from "ethers";
 import { useCallback } from "react";
 import { toast } from "react-toastify";
 import useSWR from "swr";
 
 type UseOwnedNftsResponse = {
-  listNft: (tokenId: number, price: number) => Promise<void>
+  listNft: (tokenId: number, price: string) => Promise<void>
 }
-type OwnedNftsHookFactory = CryptoHookFactory<Nft[], UseOwnedNftsResponse>
+type OwnedNftsHookFactory = CryptoHookFactory<GeneNft[], UseOwnedNftsResponse>
 
 export type UseOwnedNftsHook = ReturnType<OwnedNftsHookFactory>
 
@@ -17,7 +17,7 @@ export const hookFactory: OwnedNftsHookFactory = ({contract}) => () => {
   const {data, ...swr} = useSWR(
     contract ? "web3/useOwnedNfts" : null,
     async () => {
-      const nfts = [] as Nft[];
+      const nfts = [] as GeneNft[];
       const coreNfts = await contract!.getOwnedNfts();
 
       for (let i = 0; i < coreNfts.length; i++) {
@@ -31,6 +31,22 @@ export const hookFactory: OwnedNftsHookFactory = ({contract}) => () => {
           tokenId: item.tokenId.toNumber(),
           creator: item.creator,
           isListed: item.isListed,
+          state: item.state,
+          maxPrice: parseFloat(ethers.utils.formatEther(item.maxPrice)),
+          txCount: item.txCount.toNumber(),
+          testOrg: item.testOrg,
+          data: item.data,
+          dataHash: item.dataHash,
+          orgSign: item.orgSign,
+          firstProportion: item.firstProportion.toNumber(),
+          sustainProportion: item.sustainProportion,
+          sign: item.sign,
+          proportion: item.proportion.toNumber(),
+          encryptedKey: item.encryptedKey,
+          consumer: item.consumer,
+          consumerSign: item.consumerSign,
+          consumerKey: item.consumerKey,
+          consumerPubKey: item.consumerPubKey,
           meta
         })
       }
@@ -40,11 +56,11 @@ export const hookFactory: OwnedNftsHookFactory = ({contract}) => () => {
   )
 
   const _contract = contract;
-  const listNft = useCallback(async (tokenId: number, price: number) => {
+  const listNft = useCallback(async (tokenId: number, price: string) => {
     try {
       const result = await _contract!.placeNftOnSale(
         tokenId,  
-        ethers.utils.parseEther(price.toString()),
+        ethers.utils.parseEther(price),
         {
           value: ethers.utils.parseEther(0.025.toString())
         }

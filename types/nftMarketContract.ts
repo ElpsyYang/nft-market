@@ -86,6 +86,9 @@ export type NftMarketContractMethodNames =
   | 'tokenURI'
   | 'transferFrom'
   | 'transferOwnership'
+  | 'setTestOrg'
+  | 'containTestOrg'
+  | 'setNftOrgInfo'
   | 'setListingPrice'
   | 'getNftItem'
   | 'listedItemsCount'
@@ -97,7 +100,9 @@ export type NftMarketContractMethodNames =
   | 'getOwnedNfts'
   | 'mintToken'
   | 'buyNft'
-  | 'placeNftOnSale';
+  | 'confirmTx'
+  | 'placeNftOnSale'
+  | '_getNftItemByHash';
 export interface ApprovalEventEmittedResponse {
   owner: string;
   approved: string;
@@ -124,14 +129,46 @@ export interface TransferEventEmittedResponse {
   tokenId: BigNumberish;
 }
 export interface NftitemResponse {
+  state: number;
+  0: number;
   tokenId: BigNumber;
-  0: BigNumber;
-  price: BigNumber;
   1: BigNumber;
+  price: BigNumber;
+  2: BigNumber;
+  maxPrice: BigNumber;
+  3: BigNumber;
   creator: string;
-  2: string;
+  4: string;
   isListed: boolean;
-  3: boolean;
+  5: boolean;
+  txCount: BigNumber;
+  6: number;
+  testOrg: string;
+  7: string;
+  data: string;
+  8: string;
+  dataHash: string;
+  9: string;
+  orgSign: string;
+  10: string;
+  firstProportion: BigNumber;
+  11: number;
+  sustainProportion: boolean;
+  12: boolean;
+  sign: string;
+  13: string;
+  proportion: BigNumber;
+  14: number;
+  encryptedKey: string;
+  15: string;
+  consumer: string;
+  16: string;
+  consumerSign: string;
+  17: string;
+  consumerKey: string;
+  18: string;
+  consumerPubKey: string;
+  19: string;
 }
 export interface NftMarketContract {
   /**
@@ -253,13 +290,13 @@ export interface NftMarketContract {
    * @param from Type: address, Indexed: false
    * @param to Type: address, Indexed: false
    * @param tokenId Type: uint256, Indexed: false
-   * @param _data Type: bytes, Indexed: false
+   * @param data Type: bytes, Indexed: false
    */
   safeTransferFrom(
     from: string,
     to: string,
     tokenId: BigNumberish,
-    _data: Arrayish,
+    data: Arrayish,
     overrides?: ContractTransactionOverrides
   ): Promise<ContractTransaction>;
   /**
@@ -328,6 +365,49 @@ export interface NftMarketContract {
    */
   transferOwnership(
     newOwner: string,
+    overrides?: ContractTransactionOverrides
+  ): Promise<ContractTransaction>;
+  /**
+   * Payable: false
+   * Constant: false
+   * StateMutability: nonpayable
+   * Type: function
+   * @param orgAdd Type: address, Indexed: false
+   */
+  setTestOrg(
+    orgAdd: string,
+    overrides?: ContractTransactionOverrides
+  ): Promise<ContractTransaction>;
+  /**
+   * Payable: false
+   * Constant: true
+   * StateMutability: view
+   * Type: function
+   * @param orgAdd Type: address, Indexed: false
+   */
+  containTestOrg(
+    orgAdd: string,
+    overrides?: ContractCallOverrides
+  ): Promise<boolean>;
+  /**
+   * Payable: false
+   * Constant: false
+   * StateMutability: nonpayable
+   * Type: function
+   * @param testOrg Type: address, Indexed: false
+   * @param data Type: string, Indexed: false
+   * @param dataHash Type: bytes32, Indexed: false
+   * @param orgSign Type: bytes, Indexed: false
+   * @param firstProportion Type: uint256, Indexed: false
+   * @param sustainProportion Type: bool, Indexed: false
+   */
+  setNftOrgInfo(
+    testOrg: string,
+    data: string,
+    dataHash: Arrayish,
+    orgSign: Arrayish,
+    firstProportion: BigNumberish,
+    sustainProportion: boolean,
     overrides?: ContractTransactionOverrides
   ): Promise<ContractTransaction>;
   /**
@@ -424,10 +504,18 @@ export interface NftMarketContract {
    * Type: function
    * @param tokenURI Type: string, Indexed: false
    * @param price Type: uint256, Indexed: false
+   * @param dataHash Type: bytes32, Indexed: false
+   * @param sign Type: bytes, Indexed: false
+   * @param proportion Type: uint256, Indexed: false
+   * @param encryptedKey Type: string, Indexed: false
    */
   mintToken(
     tokenURI: string,
     price: BigNumberish,
+    dataHash: Arrayish,
+    sign: Arrayish,
+    proportion: BigNumberish,
+    encryptedKey: string,
     overrides?: ContractTransactionOverrides
   ): Promise<ContractTransaction>;
   /**
@@ -436,9 +524,26 @@ export interface NftMarketContract {
    * StateMutability: payable
    * Type: function
    * @param tokenId Type: uint256, Indexed: false
+   * @param consumerSign Type: bytes, Indexed: false
+   * @param consumerPubKey Type: string, Indexed: false
    */
   buyNft(
     tokenId: BigNumberish,
+    consumerSign: Arrayish,
+    consumerPubKey: string,
+    overrides?: ContractTransactionOverrides
+  ): Promise<ContractTransaction>;
+  /**
+   * Payable: false
+   * Constant: false
+   * StateMutability: nonpayable
+   * Type: function
+   * @param tokenId Type: uint256, Indexed: false
+   * @param consumerKey Type: string, Indexed: false
+   */
+  confirmTx(
+    tokenId: BigNumberish,
+    consumerKey: string,
     overrides?: ContractTransactionOverrides
   ): Promise<ContractTransaction>;
   /**
@@ -454,4 +559,15 @@ export interface NftMarketContract {
     newPrice: BigNumberish,
     overrides?: ContractTransactionOverrides
   ): Promise<ContractTransaction>;
+  /**
+   * Payable: false
+   * Constant: true
+   * StateMutability: view
+   * Type: function
+   * @param hash Type: bytes32, Indexed: false
+   */
+  _getNftItemByHash(
+    hash: Arrayish,
+    overrides?: ContractCallOverrides
+  ): Promise<NftitemResponse>;
 }

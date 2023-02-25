@@ -5,32 +5,38 @@ import { ChangeEvent, useState } from 'react';
 import { BaseLayout } from '@ui'
 import { Switch } from '@headlessui/react'
 import Link from 'next/link'
-import { NftMeta, PinataRes } from '@_types/nft';
+import { NftMeta, PinataRes, GeneNftMeta } from '@_types/nft';
 import axios from 'axios';
 import { useWeb3 } from '@providers/web3';
 import { ethers } from 'ethers';
 import { toast } from "react-toastify";
 import { useNetwork } from '@hooks/web3';
 import { ExclamationIcon } from '@heroicons/react/solid';
+import * as util from "ethereumjs-util";
+import * as sigUtil from "@metamask/eth-sig-util";
 
-const ALLOWED_FIELDS = ["name", "description", "image", "attributes"];
+const ALLOWED_FIELDS = ["gender", "age", "residence", "anamnesis", "document"];
 
 const NftCreate: NextPage = () => {
   const {ethereum, contract} = useWeb3();
   const {network} = useNetwork();
+
+  const [dataHash, setDataHash] = useState("");
+  const [proportion, setProportion] = useState("请输入0-100的整数");
+  const [aesKey, setAesKey] = useState("");
   const [nftURI, setNftURI] = useState("");
   const [price, setPrice] = useState("");
-  const [hasURI, setHasURI] = useState(false);
-  const [nftMeta, setNftMeta] = useState<NftMeta>({
-    name: "",
-    description: "",
-    image: "",
-    attributes: [
-      {trait_type: "attack", value: "0"},
-      {trait_type: "health", value: "0"},
-      {trait_type: "speed", value: "0"},
-    ]
+  const [firstProportion, setFirstProportion] = useState(0);
+  const [sustainProportion, setSustainProportion] = useState(false);
+
+  const [geneNftMeta, setGeneNftMeta] = useState<GeneNftMeta>({
+    gender: "",
+    age: 0,
+    residence: "",
+    anamnesis: "",
+    document: ""
   });
+
 
   const getSignedData = async () => {
     const messageToSign = await axios.get("/api/verify");
@@ -45,7 +51,28 @@ const NftCreate: NextPage = () => {
     return {signedData, account};
   }
 
-  const handleImage = async (e: ChangeEvent<HTMLInputElement>) => {
+  const signURIHash = async (URIHash: string)=> {
+    const accounts = await ethereum?.request({method: "eth_requestAccounts"}) as string[];
+    const account = accounts[0];
+    const sign = await ethereum?.request({
+      method: "personal_sign",
+      params: [URIHash, account]
+    })
+    return {sign, account};
+  }
+
+  const encrypt = async (publicKey: string, text: string) => {
+    const result = sigUtil.encrypt({
+      publicKey,
+      data: text,
+      version: "x25519-xsalsa20-poly1305"
+    });
+  
+    // https://docs.metamask.io/guide/rpc-api.html#other-rpc-methods
+    return util.bufferToHex(Buffer.from(JSON.stringify(result), "utf8"));
+  };
+
+  const handleFile = async (e: ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) {
       console.error("Select a file");
       return;
@@ -67,17 +94,17 @@ const NftCreate: NextPage = () => {
 
       const res = await toast.promise(
         promise, {
-          pending: "Uploading image",
-          success: "Image uploaded",
-          error: "Image upload error"
+          pending: "数据上传中",
+          success: "数据上传成功",
+          error: "数据上传失败，请重试"
         }
       )
 
       const data = res.data as PinataRes;
 
-      setNftMeta({
-        ...nftMeta,
-        image: `${process.env.NEXT_PUBLIC_PINATA_DOMAIN}/ipfs/${data.IpfsHash}`
+      setGeneNftMeta({
+        ...geneNftMeta,
+        document: `${process.env.NEXT_PUBLIC_PINATA_DOMAIN}/ipfs/${data.IpfsHash}`
       });
     } catch(e: any) {
       console.error(e.message);
@@ -86,28 +113,23 @@ const NftCreate: NextPage = () => {
 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setNftMeta({...nftMeta, [name]: value});
+    setGeneNftMeta({...geneNftMeta, [name]: value});
   }
 
-  const handleAttributeChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    const attributeIdx = nftMeta.attributes.findIndex(attr => attr.trait_type === name);
-
-    nftMeta.attributes[attributeIdx].value = value;
-    setNftMeta({
-      ...nftMeta,
-      attributes: nftMeta.attributes
-    })
-  }
 
   const uploadMetadata = async () => {
     try {
       const {signedData, account} = await getSignedData();
+      const nft = await contract?._getNftItemByHash(dataHash);
+      console.log(nft)
+
+      setFirstProportion(  nft?.firstProportion  )
+      setSustainProportion( (nft?.sustainProportion) as boolean )
 
       const promise = axios.post("/api/verify", {
         address: account,
         signature: signedData,
-        nft: nftMeta
+        nft: geneNftMeta
       })
 
       const res = await toast.promise(
@@ -140,19 +162,41 @@ const NftCreate: NextPage = () => {
           throw new Error("Invalid Json structure");
         }
       })
+      
+      const URIBuffer = util.keccak256(Buffer.from(nftURI, "utf-8"));
+      const URIHash = util.bufferToHex(URIBuffer);
 
+      const {sign, account} = await signURIHash(URIHash);
+
+      const ECDSAsig = util.fromRpcSig(sign as string);
+      const pubKeyBuffer = util.ecrecover(util.hashPersonalMessage(URIBuffer), ECDSAsig.v, ECDSAsig.r, ECDSAsig.s);
+      const pubKey = util.bufferToHex(pubKeyBuffer);
+
+      //获取metamask加密公钥
+      const metaPK = await ethereum?.request({
+        method: "eth_getEncryptionPublicKey",
+        params: [account]
+      }) as string
+      //给信息加密
+      const encryptedKey = await encrypt(metaPK, aesKey)
+      
       const tx = await contract?.mintToken(
         nftURI,
-        ethers.utils.parseEther(price), {
+        ethers.utils.parseEther(price), 
+        dataHash,
+        sign,
+        proportion,
+        encryptedKey,
+        {
           value: ethers.utils.parseEther(0.025.toString())
         }
       );
       
       await toast.promise(
         tx!.wait(), {
-          pending: "Minting Nft Token",
-          success: "Nft has ben created",
-          error: "Minting error"
+          pending: "通证制造中",
+          success: "通证制造完成，请前往个人信息查看",
+          error: "通证制造失败，请重试"
         }
       );
     } catch(e: any) {
@@ -188,27 +232,8 @@ const NftCreate: NextPage = () => {
   return (
     <BaseLayout>
       <div>
-        <div className="py-4">
-          { !nftURI &&
-            <div className="flex">
-              <div className="mr-2 font-bold underline">您是否已经上传数据元信息?</div>
-              <Switch
-                checked={hasURI}
-                onChange={() => setHasURI(!hasURI)}
-                className={`${hasURI ? 'bg-indigo-900' : 'bg-indigo-700'}
-                  relative inline-flex flex-shrink-0 h-[28px] w-[64px] border-2 border-transparent rounded-full cursor-pointer transition-colors ease-in-out duration-200 focus:outline-none focus-visible:ring-2  focus-visible:ring-white focus-visible:ring-opacity-75`}
-              >
-                <span className="sr-only">Use setting</span>
-                <span
-                  aria-hidden="true"
-                  className={`${hasURI ? 'translate-x-9' : 'translate-x-0'}
-                    pointer-events-none inline-block h-[24px] w-[24px] rounded-full bg-white shadow-lg transform ring-0 transition ease-in-out duration-200`}
-                />
-              </Switch>
-            </div>
-          }
-        </div>
-        { (nftURI || hasURI) ?
+       
+        { nftURI ?
           <div className="md:grid md:grid-cols-3 md:gap-6">
             <div className="md:col-span-1">
               <div className="px-4 sm:px-0">
@@ -221,28 +246,10 @@ const NftCreate: NextPage = () => {
             <div className="mt-5 md:mt-0 md:col-span-2">
               <form>
                 <div className="shadow sm:rounded-md sm:overflow-hidden">
-                  { hasURI &&
-                    <div className="px-4 py-5 bg-white space-y-6 sm:p-6">
-                      <div>
-                        <label htmlFor="uri" className="block text-sm font-medium text-gray-700">
-                          基因元数据链接
-                        </label>
-                        <div className="mt-1 flex rounded-md shadow-sm">
-                          <input
-                            onChange={(e) => setNftURI(e.target.value)}
-                            type="text"
-                            name="uri"
-                            id="uri"
-                            className="focus:ring-indigo-500 focus:border-indigo-500 flex-1 block w-full rounded-none rounded-r-md sm:text-sm border-gray-300"
-                            placeholder="http://DATABASE.com/data.json"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  }
+                  
                   { nftURI &&
                     <div className='mb-4 p-4'>
-                      <div className="font-bold">Your metadata: </div>
+                      <div className="font-bold">您的个人数据地址: </div>
                       <div>
                         <Link href={nftURI}>
                           <a className="underline text-indigo-600">
@@ -252,10 +259,63 @@ const NftCreate: NextPage = () => {
                       </div>
                     </div>
                   }
+
+                  <div className="px-4 py-5 bg-white space-y-6 sm:p-6">
+                    <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                      机构分成比例
+                    </label>
+                    <div className="mt-1 flex rounded-md shadow-sm">
+                      <input
+                        value={firstProportion}
+                        type="number"
+                        name="firstProportion"
+                        id="firstProportion"
+                        className="focus:ring-indigo-500 focus:border-indigo-500 flex-1 block w-full rounded-none rounded-r-md sm:text-sm border-gray-300"
+                        disabled = {true}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="px-4 py-5 bg-white space-y-6 sm:p-6">
+                    <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                      机构是否持续分红
+                    </label>
+                    <div className="mt-1 flex rounded-md shadow-sm">
+                      <input
+                        value={sustainProportion? "是":"否"}
+                        type="text"
+                        name="sustainProportion"
+                        id="sustainProportion"
+                        className="focus:ring-indigo-500 focus:border-indigo-500 flex-1 block w-full rounded-none rounded-r-md sm:text-sm border-gray-300"
+                        placeholder={sustainProportion? "是":"否"}
+                        disabled = {true}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="px-4 py-5 bg-white space-y-6 sm:p-6">
+                    <div>
+                      <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                        加密密钥
+                      </label>
+                      <div className="mt-1 flex rounded-md shadow-sm">
+                        <input
+                          value={aesKey}
+                          onChange={(e) => setAesKey(e.target.value)}
+                          type="text"
+                          name="aesKey"
+                          id="aesKey"
+                          className="focus:ring-indigo-500 focus:border-indigo-500 flex-1 block w-full rounded-none rounded-r-md sm:text-sm border-gray-300"
+                          placeholder="请输入密码原文密钥，系统自动生成加密密钥"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="px-4 py-5 bg-white space-y-6 sm:p-6">
                     <div>
                       <label htmlFor="price" className="block text-sm font-medium text-gray-700">
-                        价格
+                        通证价格
                       </label>
                       <div className="mt-1 flex rounded-md shadow-sm">
                         <input
@@ -265,20 +325,41 @@ const NftCreate: NextPage = () => {
                           name="price"
                           id="price"
                           className="focus:ring-indigo-500 focus:border-indigo-500 flex-1 block w-full rounded-none rounded-r-md sm:text-sm border-gray-300"
-                          placeholder="0.8"
+                          placeholder="请输入通证价格"
                         />
                       </div>
                     </div>
                   </div>
+
+                  <div className="px-4 py-5 bg-white space-y-6 sm:p-6">
+                    <div>
+                      <label htmlFor="price" className="block text-sm font-medium text-gray-700">
+                        分成比例
+                      </label>
+                      <div className="mt-1 flex rounded-md shadow-sm">
+                        <input
+                          onChange={(e) => setProportion(e.target.value)}
+                          value={proportion}
+                          type="number"
+                          name="proportion"
+                          id="proportion"
+                          className="focus:ring-indigo-500 focus:border-indigo-500 flex-1 block w-full rounded-none rounded-r-md sm:text-sm border-gray-300"
+                          placeholder="请输入0-100的整数作为自身后续分成比例的百分制"
+                        />
+                      </div>
+                    </div>
+                  </div>
+   
                   <div className="px-4 py-3 bg-gray-50 text-right sm:px-6">
                     <button
                       onClick={createNft}
                       type="button"
                       className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                     >
-                      发布
+                      制造基因数据通证
                     </button>
                   </div>
+
                 </div>
               </form>
             </div>
@@ -297,46 +378,111 @@ const NftCreate: NextPage = () => {
             <form>
               <div className="shadow sm:rounded-md sm:overflow-hidden">
                 <div className="px-4 py-5 bg-white space-y-6 sm:p-6">
+
+
                   <div>
                     <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                      数据元信息名称
+                      基因数据地址哈希
                     </label>
                     <div className="mt-1 flex rounded-md shadow-sm">
                       <input
-                        value={nftMeta.name}
-                        onChange={handleChange}
+                        value={dataHash}
+                        onChange={(e) => setDataHash(e.target.value)}
                         type="text"
-                        name="name"
-                        id="name"
+                        name="dataHash"
+                        id="dataHash"
                         className="focus:ring-indigo-500 focus:border-indigo-500 flex-1 block w-full rounded-none rounded-r-md sm:text-sm border-gray-300"
-                        placeholder="请填写元信息名称，方便后续管理和共享"
+                        placeholder="请填写测序机构生成的地址哈希"
                       />
                     </div>
                   </div>
+
+                  <div>
+                    <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                      性别
+                    </label>
+                    <div className="mt-1 flex rounded-md shadow-sm">
+                      <input
+                        value={geneNftMeta.gender}
+                        onChange={handleChange}
+                        type="text"
+                        name="gender"
+                        id="gender"
+                        className="focus:ring-indigo-500 focus:border-indigo-500 flex-1 block w-full rounded-none rounded-r-md sm:text-sm border-gray-300"
+                        placeholder="请输入性别"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                      年龄
+                    </label>
+                    <div className="mt-1 flex rounded-md shadow-sm">
+                      <input
+                        value={geneNftMeta.age}
+                        onChange={handleChange}
+                        type="text"
+                        name="age"
+                        id="age"
+                        className="focus:ring-indigo-500 focus:border-indigo-500 flex-1 block w-full rounded-none rounded-r-md sm:text-sm border-gray-300"
+                        placeholder="请输入年龄"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                      常驻地
+                    </label>
+                    <div className="mt-1 flex rounded-md shadow-sm">
+                      <input
+                        value={geneNftMeta.residence}
+                        onChange={handleChange}
+                        type="text"
+                        name="residence"
+                        id="residence"
+                        className="focus:ring-indigo-500 focus:border-indigo-500 flex-1 block w-full rounded-none rounded-r-md sm:text-sm border-gray-300"
+                        placeholder="请输入常驻地"
+                      />
+                    </div>
+                  </div>
+
                   <div>
                     <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-                      简要描述
+                      既往史
                     </label>
                     <div className="mt-1">
                       <textarea
-                        value={nftMeta.description}
+                        value={geneNftMeta.anamnesis}
                         onChange={handleChange}
-                        id="description"
-                        name="description"
+                        id="anamnesis"
+                        name="anamnesis"
                         rows={3}
                         className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 mt-1 block w-full sm:text-sm border border-gray-300 rounded-md"
-                        placeholder="请填写元信息简要描述以方便后续管理和共享"
+                        placeholder="请填写本人既往病史，包括但不限于既往疾病、手术、用药、过敏史、家族史、医嘱等"
                       />
                     </div>
                     <p className="mt-2 text-sm text-gray-500">
-                      请简要描述元信息
+                      详细的既往病史既往病史将可能使得您的基因数据更具价值
                     </p>
                   </div>
-                  {/* Has Image? */}
-                  { nftMeta.image ?
-                    <img src={nftMeta.image} alt="" className="h-40" /> :
+
+                 
+                  { geneNftMeta.document ?   
+                    <div className='mb-4 p-4'>
+                      <div className="font-bold">您的个人数据地址: </div>
+                       <div>
+                        <Link href={geneNftMeta.document}>
+                          <a className="underline text-indigo-600">
+                          {geneNftMeta.document}
+                          </a>
+                        </Link>
+                      </div>
+                    </div> 
+                    :
                     <div>
-                    <label className="block text-sm font-medium text-gray-700">元信息</label>
+                    <label className="block text-sm font-medium text-gray-700">辅助证明资料</label>
                     <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
                       <div className="space-y-1 text-center">
                         <svg
@@ -358,41 +504,22 @@ const NftCreate: NextPage = () => {
                             htmlFor="file-upload"
                             className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500"
                           >
-                            <span>请上传元信息</span>
+                            <span>请上传病史等辅助证明材料</span>
                             <input
-                              onChange={handleImage}
+                              onChange={handleFile}
                               id="file-upload"
                               name="file-upload"
                               type="file"
                               className="sr-only"
                             />
                           </label>
-                          <p className="pl-1">或将元信息文件拖拽至此处</p>
+                          <p className="pl-1">或将文件拖拽至此处</p>
                         </div>
                       </div>
                     </div>
                   </div>
                   }
-                  <div className="grid grid-cols-6 gap-6">
-                    { nftMeta.attributes.map(attribute =>
-                      <div key={attribute.trait_type} className="col-span-6 sm:col-span-6 lg:col-span-2">
-                        <label htmlFor={attribute.trait_type} className="block text-sm font-medium text-gray-700">
-                          {attribute.trait_type}
-                        </label>
-                        <input
-                          onChange={handleAttributeChange}
-                          value={attribute.value}
-                          type="text"
-                          name={attribute.trait_type}
-                          id={attribute.trait_type}
-                          className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-                        />
-                      </div>
-                    )}
-                  </div>
-                  <p className="text-sm !mt-2 text-gray-500">
-                    Choose value from 0 to 100
-                  </p>
+                  
                 </div>
                 <div className="px-4 py-3 bg-gray-50 text-right sm:px-6">
                   <button
@@ -400,7 +527,7 @@ const NftCreate: NextPage = () => {
                     type="button"
                     className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                   >
-                    发布
+                    上传个人信息
                   </button>
                 </div>
               </div>

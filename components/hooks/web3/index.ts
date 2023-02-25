@@ -36,3 +36,12 @@ export const useOwnedNfts = () => {
     nfts: swrRes
   }
 }
+
+export const useConfirmNfts = () => {
+  const hooks = useHooks();
+  const swrRes = hooks.useConfirmNfts();
+
+  return {
+    nfts: swrRes
+  }
+}

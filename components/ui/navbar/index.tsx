@@ -8,7 +8,8 @@ import Walletbar from './Walletbar';
 
 const navigation = [
   { name: '数据共享库', href: '/', current: true },
-  { name: '提交新数据', href: '/nft/create', current: false }
+  { name: '提交新数据', href: '/nft/create', current: false },
+  { name: '检测机构提交信息', href: '/nft/orgCreate', current: false }
 ]
 
 function classNames(...classes: string[]) {

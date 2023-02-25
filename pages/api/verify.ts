@@ -4,16 +4,16 @@ import { v4 as uuidv4 } from "uuid";
 import { Session } from "next-iron-session";
 import { NextApiRequest, NextApiResponse } from "next";
 import { withSession, contractAddress, addressCheckMiddleware, pinataApiKey, pinataSecretApiKey } from "./utils";
-import { NftMeta } from "@_types/nft";
+import { NftMeta, GeneNftMeta } from "@_types/nft";
 import axios from "axios";
 
 export default withSession(async (req: NextApiRequest & {session: Session}, res: NextApiResponse) => {
   if (req.method === "POST") {
     try {
       const {body} = req;
-      const nft = body.nft as NftMeta
+      const nft = body.nft as GeneNftMeta
       
-      if (!nft.name || !nft.description || !nft.attributes) {
+      if (!nft.gender || !nft.age || !nft.residence) {
         return res.status(422).send({message: "Some of the form data are missing!"}); 
       }
 

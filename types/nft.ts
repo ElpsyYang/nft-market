@@ -38,3 +38,39 @@ export type PinataRes = {
 }
 
 export type Idx = number
+
+
+export type GeneNftMeta = {
+  gender: string;
+  age: number;
+  residence: string;
+  anamnesis: string;
+  document: string;
+}
+
+export type GeneNftCore = {
+  state: number;
+  tokenId: number;
+  price: number;
+  maxPrice: number;
+  creator: string;
+  isListed: boolean;
+  txCount: number;
+  testOrg: string;
+  data: string;
+  dataHash: string;
+  orgSign: string;
+  firstProportion: number;
+  sustainProportion: boolean;
+  sign: string;
+  proportion: number;
+  encryptedKey: string;
+  consumer: string;
+  consumerSign: string;
+  consumerKey: string;
+  consumerPubKey: string;
+}
+
+export type GeneNft = {
+  meta: GeneNftMeta
+} & GeneNftCore
