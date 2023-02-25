@@ -7,7 +7,7 @@ import { useNetwork } from '@hooks/web3';
 import { ExclamationIcon, PaperClipIcon } from '@heroicons/react/solid';
 import * as util from "ethereumjs-util";
 import { useRouter } from 'next/router';
-import { ethers } from 'ethers';
+import { BytesLike, ethers } from 'ethers';
 import { toast } from "react-toastify";
 
 const ALLOWED_FIELDS = ["gender", "age", "residence", "anamnesis", "document"];
@@ -45,7 +45,7 @@ const NftCreate: NextPage = () => {
       
       const tx = await contract?.buyNft(
         nft.tokenId,
-        sign,
+        sign as BytesLike,
         metaPK,
         {
           value: ethers.utils.parseEther(nft.price.toString())
