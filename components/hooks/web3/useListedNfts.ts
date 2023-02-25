@@ -7,7 +7,7 @@ import { toast } from "react-toastify";
 import useSWR from "swr";
 
 type UseListedNftsResponse = {
-  buyNft: (token: number, value: number) => Promise<void>
+  buyNft: (token: number, consumerSign: string, consumerPubKey: string,value: number) => Promise<void>
 }
 type ListedNftsHookFactory = CryptoHookFactory<GeneNft[], UseListedNftsResponse>
 
