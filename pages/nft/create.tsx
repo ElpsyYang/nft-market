@@ -26,7 +26,7 @@ const NftCreate: NextPage = () => {
   const [aesKey, setAesKey] = useState("");
   const [nftURI, setNftURI] = useState("");
   const [price, setPrice] = useState("");
-  const [firstProportion, setFirstProportion] = useState(0);
+  const [firstProportion, setFirstProportion] = useState(ethers.BigNumber.from(0));
   const [sustainProportion, setSustainProportion] = useState(false);
 
   const [geneNftMeta, setGeneNftMeta] = useState<GeneNftMeta>({
@@ -123,7 +123,7 @@ const NftCreate: NextPage = () => {
       const nft = await contract?._getNftItemByHash(dataHash);
       console.log(nft)
 
-      setFirstProportion(  (nft?.firstProportion as BigNumber).toNumber )
+      setFirstProportion(  nft?.firstProportion == undefined? ethers.BigNumber.from(0) :(ethers.BigNumber.from(nft?.firstProportion)))
       setSustainProportion( (nft?.sustainProportion) as boolean )
 
       const promise = axios.post("/api/verify", {
